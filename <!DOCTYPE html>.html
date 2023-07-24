@@ -1,0 +1,198 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>PD1-Copper 各組產能</title>
+    <!-- 引入外部的Chart.js庫 -->
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            background-color: #f0f0f0;
+            margin: 20px;
+        }
+
+        h1 {
+            text-align: center;
+            color: #333;
+        }
+
+        .container {
+            display: flex;
+            justify-content: space-between;
+        }
+
+        .data-input {
+            width: 200px;
+            margin: 10px;
+            padding: 10px;
+            background-color: #fff;
+            border: 1px solid #ccc;
+            border-radius: 5px;
+            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+        }
+
+        .pie-chart {
+            flex: 1;
+            max-width: 400px;
+            margin: 10px;
+            background-color: #fff;
+            border: 1px solid #ccc;
+            border-radius: 5px;
+            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+        }
+
+        .number-label {
+            font-size: 18px;
+            color: #333;
+        }
+
+        #currentNumber, #targetNumber {
+            font-size: 24px;
+            font-weight: bold;
+            color: #007bff;
+        }
+
+        .current-time {
+            text-align: center;
+            font-size: 18px;
+            color: #666;
+            margin-top: 10px;
+        }
+
+        /* 將"各組產能佔比"文字置中對齊 */
+        .pie-chart-title {
+            text-align: center;
+            font-size: 20px;
+            color: #333;
+            margin: 20px 0;
+        }
+    </style>
+</head>
+<body>
+    <h1 id="pageTitle">PD1-Copper 各組產能</h1>
+    <div class="container">
+        <div class="data-input">
+            <h2>數量輸入</h2>
+            <p>裁線：<input type="number" id="裁線數量" onchange="updateStats('裁線')"></p>
+            <p>組裝：<input type="number" id="組裝數量" onchange="updateStats('組裝')"></p>
+            <p>成型：<input type="number" id="成型數量" onchange="updateStats('成型')"></p>
+            <p>包裝：<input type="number" id="包裝數量" onchange="updateStats('包裝')"></p>
+            <p>產能目標：<input type="number" id="產能目標數量" onchange="updateTarget()"></p>
+            <p class="number-label">目前總數量：<span id="currentNumber">0</span></p>
+            <p class="number-label">產能目標數量：<span id="targetNumber">0</span></p>
+            <div class="current-time" id="currentTime"></div>
+        </div>
+        <div class="pie-chart">
+            <!-- 加入"各組產能佔比"文字 -->
+            <h2 class="pie-chart-title">各組產能佔比</h2>
+            <canvas id="myPieChart"></canvas>
+        </div>
+    </div>
+
+    <script>
+        // 創建一個物件來保存每個項目的數字
+        var stats = {
+            '裁線': 0,
+            '組裝': 0,
+            '成型': 0,
+            '包裝': 0
+        };
+
+        // 繪製初始的圓餅圖
+        var ctx = document.getElementById('myPieChart').getContext('2d');
+        var myPieChart = new Chart(ctx, {
+            type: 'pie',
+            data: {
+                labels: Object.keys(stats),
+                datasets: [{
+                    data: Object.values(stats),
+                    backgroundColor: [
+                        'rgba(255, 99, 132, 0.8)',
+                        'rgba(54, 162, 235, 0.8)',
+                        'rgba(255, 206, 86, 0.8)',
+                        'rgba(75, 192, 192, 0.8)',
+                    ],
+                    borderColor: '#fff',
+                    borderWidth: 2
+                }]
+            },
+            options: {
+                responsive: true,
+                plugins: {
+                    legend: {
+                        position: 'bottom',
+                        labels: {
+                            fontColor: '#333',
+                            fontSize: 14,
+                            padding: 10
+                        }
+                    },
+                    tooltip: {
+                        callbacks: {
+                            label: function (context) {
+                                var label = context.label || '';
+                                if (label) {
+                                    label += ': ';
+                                }
+                                if (context.parsed && context.parsed >= 0) {
+                                    label += (context.parsed * 100).toFixed(2) + '%';
+                                }
+                                return label;
+                            }
+                        }
+                    }
+                }
+            }
+        });
+
+        // 更新每個項目的數字和統計
+        function updateStats(item) {
+            var inputElement = document.getElementById(item + "數量");
+            var value = inputElement.value;
+            stats[item] = parseInt(value);
+            updateTotal();
+            updatePieChart(); // 添加更新圓餅圖的呼叫
+        }
+
+        // 更新總數
+        function updateTotal() {
+            var total = 0;
+            for (var key in stats) {
+                total += stats[key];
+            }
+            var currentNumberElement = document.getElementById("currentNumber");
+            currentNumberElement.textContent = total;
+
+            // 同時更新產能目標
+            updateTarget();
+        }
+
+        // 更新產能目標
+        function updateTarget() {
+            var targetInputElement = document.getElementById("產能目標數量");
+            var targetValue = targetInputElement.value;
+            var targetElement = document.getElementById("targetNumber");
+            targetElement.textContent = targetValue;
+        }
+
+        // 更新圓餅圖
+        function updatePieChart() {
+            myPieChart.data.datasets[0].data = Object.values(stats);
+            myPieChart.update();
+        }
+
+        // 初始化時呼叫一次更新圓餅圖
+        updatePieChart();
+
+        // 更新當前時間
+        function updateCurrentTime() {
+            var currentTimeElement = document.getElementById("currentTime");
+            var currentTime = new Date().toLocaleString();
+            currentTimeElement.textContent = "當前時間：" + currentTime;
+        }
+
+        // 每秒更新一次當前時間
+        setInterval(updateCurrentTime, 1000);
+    </script>
+</body>
+</html>
